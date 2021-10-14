@@ -77,10 +77,6 @@ else
         then
             echo "There is only one accession number..." &&  ${normal_pref}
         elif [${temp_len} -gt 1]; \
-        then
-
-
-
-            
+        then    
     fi
 fi
