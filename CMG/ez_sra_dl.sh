@@ -12,12 +12,14 @@ set -e
 SCRIPT=$(readlink -f $0) # grep the symlink of this script
 SCRIPT_PATH=$(dirname ${SCRIPT}) # 
 
-echo "$SCRIPT"
-echo "$SCRIPT_PATH"
+echo "${SCRIPT}"
+echo "${SCRIPT_PATH}"
 
+SRATOOLKIT=${SCRIPT_PATH}/sratoolkit
+PREFETCH=
 
 # default
-
+PREFIX="ezsradl"
 
 # 0.prepocessing
 while getopts "p:f:s:h" option; do
@@ -25,16 +27,26 @@ while getopts "p:f:s:h" option; do
         p) PREFIX=${OPTARG}
         f) FILE=${OPTARG}
         s) SINGLE=${OPTARG}
+        h) echo "Usage: $0 -f <FILE_multi.txt> [options] \
+                           -s <FILE_single.txt> \
+                           -p output prefix [ezsradl]"
         *) exit 1
     esac
 done
 
-base=$(basename ${FILE} .txt)
+base1=$(basename ${FILE} .txt)
+base2=$(basename ${SINGLE} .txt)
 echo ${base}
+
+if [ -z "${FILE}" ] || [ -z "${SINGLE}" ]; then
+    echo "Usage: $0 -f <FILE_multi.txt> [options]"
+    echo "          -s <FILE_single.txt>"
+    echo "          -p output prefix [ezsradl]"
+if
 
 # Defining fuction
 ez_sra() {
-    num=$(cat ${base}.txt)
+    num=$(cat ${base1}.txt)
     for name in $num
     do
         echo ${name}
@@ -48,21 +60,22 @@ ez_sra() {
 
 normal_pref() {
     echo "processing the only one AC..." && \
-    sort ${myfile} |parallel -1 "prefetch {}" |more
+    sort ${myfile2} |parallel -1 "prefetch {}" |more
 }
 
 # run_sra_dl
-if [-e ${PREFIX}.done ]; then
+if [-e ${PREFIX}.runs.done ]; then
     echo "All the files are done"
 else 
     echo "Precessing downloading..."
-    myfile="$FILE"
-    if [! -d "$SCRIPT_PATH/${myfile}"]; then
-        echo "${myfile} is not existed"
+    myfile1=${FILE}
+    myfile2=${SINGLE}
+    if [! -d "${SCRIPT_PATH}/${myfile1}" ] || [! -d "${SCRIPT_PATH}/${myfile2}"]; then
+        echo "${myfile1} || ${myfile2} is not existed"
         echo "Please copy the run_acc.txt to the working directory"
     #
     else
-        echo "${myfile} is exsited, now processing..."
+        echo "${myfile1} || ${myfile2} is exsited, now processing..."
     fi
     
     temp_len=`cat $SCRIPT_PATH/${myfile} |wc -l`
@@ -73,10 +86,16 @@ else
         while [ ${temp_len} -gt 1]; \
         do
             echo "Going on..."
-        if [ ${temp_len} -eq 1]; \ 
+        #
+        if [ ${temp_len} -eq 1]; \
         then
-            echo "There is only one accession number..." &&  ${normal_pref}
+            echo "There is only one accession number..." && ${normal_pref}  
+        #      
         elif [${temp_len} -gt 1]; \
-        then    
+        #
+        then
+        echo "Runing batch sra downloading..." && ${ez_sra}
     fi
+    touch ${PREFIX}.runs.done
 fi
+
