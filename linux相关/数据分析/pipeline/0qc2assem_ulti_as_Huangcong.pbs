@@ -1,0 +1,163 @@
+#!/bin/bash
+#PBS -N zz_test_qc2assembly
+#PBS -l nodes=c005:ppn=8
+
+# Function defination
+## vi empty.list && \ < empty list
+
+##pre-setting
+threads=8
+name='x.zz'
+prefix1='q2'
+prefix2='q3'
+prefix3='q4'
+raw_data_link=/lomi_home/gaoyang/Result-X101SC19092528_Z02_J014_B1_3_20201214/raw_data
+
+workdir=/lomi_home/gaoyang/meta_MAG_workdir/as_China
+cd $workdir
+
+#FUNCTION DEFINATION
+##vi empty.list && \ < empty list
+function add_name {
+echo "${name}.q1" > ${name}.list
+#echo "${name}.q2" >> ${name}.list && \
+#echo "${name}.q3" >> ${name}.list
+}
+
+##add a _1.fastq and _2.fastq to all the data_name
+function add_suffix {
+for name in *.fq1
+do
+mv ${name}  ${name%%_*}_1.fastq
+mv ${name%%_*}_350.fq2 ${name%%_*}_2.fastq
+done
+}
+
+#0.Precessing
+##change_list_then_get_raw_data
+mkdir -p ${name}/read_QC && cd $_
+cp ../../empty.list .
+
+if [ -a "${name}.list" ]; then
+    add_name
+else
+    echo "There is no list..."
+    mv *.list ${name}.list
+    add_name
+fi
+
+
+if [ -e "/lomi_home/gaoyang/Result-X101SC19092528_Z02_J014_B1_3_20201214/raw_data/${name}.${prefix1}_350.fq1" ]; then
+    echo "${name}.q2" >> ${name}.list
+else
+    echo "no 'q2' file"
+    echo "going on..."
+fi
+
+if [ -e "/lomi_home/gaoyang/Result-X101SC19092528_Z02_J014_B1_3_20201214/raw_data/${name}.${prefix2}_350.fq1" ]; then
+    echo "${name}.q3" >> ${name}.list
+else
+    echo "no 'q3' file"
+    echo "going on..."
+fi
+
+if [ -e "/lomi_home/gaoyang/Result-X101SC19092528_Z02_J014_B1_3_20201214/raw_data/${name}.${prefix3}_350.fq1" ]; then
+    echo "${name}.q4" >> ${name}.list
+else
+    echo "no 'q4' file"
+    echo "going on..."
+fi
+
+
+while read i
+do
+ln -s $raw_data_link/${i}_* .
+done < ${name}.list
+
+##add_suffix_1.fastq
+#############################################
+#for name in *.fq1                          #
+#do                                         #
+#mv ${name}  ${name%%_*}_1.fastq            #
+#mv ${name%%_*}_350.fq2 ${name%%_*}_2.fastq #
+#done                                       #
+#############################################
+add_suffix
+
+#1.QC
+## check coverting format
+for i in *fastq
+do
+python /share/pipelines/tools/CONVERT_FastQFastA_to_FastQStd.py -s $i -c N
+done
+
+## trimming paired-end adaptors 
+## trimming_test.sh
+for filename in *_1.fastq
+do
+
+BASE=$(basename $filename _1.fastq)
+#BASE=${i%%_*}
+
+reads_1=${BASE}_1.fastq
+reads_2=${BASE}_2.fastq
+
+echo ${reads_1}
+echo ${reads_2}
+
+/lomi_home/gaoyang/meta_MAG_workdir/pipeline/QC_material/paired-end.sh $reads_1 $reads_2
+done
+## after trimming and assessing results
+mkdir ../clean_reads && cd $_
+mv ../read_QC/*clean*fastq .
+
+export PATH=$PATH:/share/software/miniconda/miniconda3-latest/envs/fastqc-0.11.8/bin
+
+for i in *_1.fastq
+do
+
+BASE=$(basename $filename _1.fastq)
+###echo ${BASE}
+
+mkdir ${BASE}_post-QC_report
+reads_1=${BASE}_clean_1.fastq
+reads_2=${BASE}_clean_2.fastq
+fastqc -q -t $threads -o ${BASE}_post-QC_report -f fastq $reads_1 $reads_2
+done
+
+# assembly
+##assembly
+mkdir ../assembly && cd $_
+export PATH=$PATH:/share/software/megahit
+ln -s ../clean_reads/*fastq .
+
+for filename in *1.fastq
+do
+
+BASE=$(basename $filename _clean_1.fastq)
+reads_1=${BASE}_clean_1.fastq
+reads_2=${BASE}_clean_2.fastq
+
+megahit --presets meta-sensitive -t $threads -m 0.9 -1 $reads_1 -2 $reads_2 -o ${BASE}_meghit_asm
+
+done
+
+#assess assembly results
+
+mkdir Results
+for i in *1.fastq
+do
+BASE=${i%%_*}
+mv ${BASE}_meghit_asm/final.contigs.fa Results/${BASE}.contigs.fa
+done
+
+module load miniconda3
+source activate quast
+
+for i in Results/*fa
+do quast -t 64 $i -o ${i/.contigs.fa/}.quast
+done
+
+conda deactivate
+
+rm -rf *asm

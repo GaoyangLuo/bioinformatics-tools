@@ -1,0 +1,88 @@
+#!/bin/bash
+#PBS -N qc2ass_patho
+#PBS -l nodes=c004:ppn=32
+workdir=/lomi_home/gaoyang/microplastic_test/dashariver/metagenome_illunina
+cd $workdir
+
+threads=32
+name='work'
+
+#vi ${name}.list
+
+##get the binning list
+mkdir -p ${name}/read_QC && cd $_
+cp ../../${name}.list .
+
+##get rawdata
+while read i
+do ln -s /lomi_home/gaoyang/microplastic_test/dashariver/metagenome_illunina/0_raw/${i} .
+done < ${name}.list
+
+##QC
+#covert format
+
+for i in *fq
+do
+python /share/pipelines/tools/CONVERT_FastQFastA_to_FastQStd.py -s $i -c N
+done
+
+#paired-end QC
+
+for i in *_1.fq
+do
+BASE=$(basename $i _1.fq)
+reads_1=${BASE}_1.fq
+reads_2=${BASE}_2.fq
+/lomi_home/gaoyang/meta_MAG_workdir/pipeline/QC_material/paired-end.sh $reads_1 $reads_2
+done
+
+##assess QC results
+
+mkdir ../clean_reads && cd $_
+mv ../read_QC/*clean*fq .
+
+export PATH=$PATH:/share/software/miniconda/miniconda3-latest/envs/fastqc-0.11.8/bin
+
+for i in *1.fq
+do
+BASE=${i%%_*}
+mkdir ${BASE}_post-QC_report
+reads_1=${BASE}_clean_1.fq
+reads_2=${BASE}_clean_2.fq
+fastqc -q -t $threads -o ${BASE}_post-QC_report -f fastq $reads_1 $reads_2 
+done
+
+##assembly
+
+mkdir ../assembly && cd $_
+
+export PATH=$PATH:/share/software/megahit
+ln -s ../clean_reads/*fq .
+
+for i in *1.fq
+do
+BASE=${i%%_*}
+reads_1=${BASE}_clean_1.fq
+reads_2=${BASE}_clean_2.fq
+megahit --presets meta-sensitive -t $threads -m 0.9 -1 $reads_1 -2 $reads_2 -o ${BASE}_meghit_asm
+done
+
+#assess assembly results
+
+mkdir Results
+for i in *1.fq
+do
+BASE=${i%%_*}
+mv ${BASE}_meghit_asm/final.contigs.fa Results/${BASE}.contigs.fna
+done
+
+module load miniconda3
+source activate quast
+
+for i in Results/*fna
+do quast -t 64 $i -o ${i/.contigs.fna/}.quast
+done
+
+conda deactivate
+
+rm -rf *asm

@@ -1,0 +1,22 @@
+#!/bin/bash
+#PBS -N argranker_DSR_flexbar
+#PBS -l nodes=c004:ppn=32
+
+KKDB=/lomi_home/gaoyang/db/kraken2/202203
+workdir=/lomi_home/gaoyang/microplastic_test/dashariver/metagenome_illunina
+cd $workdir
+
+threads=32
+
+#create_resipotory_to_store_rawdata
+mkdir arg_run_flexbar
+input=$workdir/arg_run_flexbar
+#linkdata
+ln -s /lomi_home/gaoyang/microplastic_test/NorthPacificGyre_PRJNA318384/metagenome_illumina/1_assembly/*fq ${input}
+#activate argranker
+source /lomi_home/gaoyang/miniconda/bin/activate argranker
+#follow_steps1
+arg_ranker -i ${input} -t 32 -kkdb /lomi_home/gaoyang/db/kraken2/202203
+#follow_steps2
+sh $workdir/arg_ranking/script_output//arg_ranker.sh
+

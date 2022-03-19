@@ -1,0 +1,48 @@
+#!/bin/bash
+#PBS -N cleanreads_SK
+#PBS -l nodes=c009:ppn=32
+
+workdir=/lomi_data/lomi_external/wwtp_southkorea_2016may-2019may/metagenome_illumina/1_clean
+cd $workdir
+
+threads=32
+name='all'
+
+mkdir -p ${name}/read_QC && cd $_
+
+##get rawdata
+ln -s /lomi_data/lomi_external/wwtp_southkorea_2016may-2019may/metagenome_illumina/0_extract_fq/*fq .
+
+##QC
+#covert format
+
+for i in *fq
+do
+python /share/pipelines/tools/CONVERT_FastQFastA_to_FastQStd.py -s $i -c N
+done
+
+#paired-end QC
+
+for i in *_1.fq
+do
+BASE=${i%%a_*}
+reads_1=${BASE}a_1.fq
+reads_2=${BASE}a_2.fq
+/lomi_home/gaoyang/meta_MAG_workdir/pipeline/QC_material/paired-end.sh $reads_1 $reads_2
+done
+
+##assess QC results
+
+mkdir ../clean_reads && cd $_
+mv ../read_QC/*clean*fq .
+
+export PATH=$PATH:/share/software/miniconda/miniconda3-latest/envs/fastqc-0.11.8/bin
+
+for i in *1.fq
+do
+BASE=${i%%a_*}
+mkdir ${BASE}a_post-QC_report
+reads_1=${BASE}a_clean_1.fq
+reads_2=${BASE}a_clean_2.fq
+fastqc -q -t $threads -o ${BASE}_post-QC_report -f fastq $reads_1 $reads_2 
+done

@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -N trimmomatic_singleEnd
+#PBS -l nodes=c006:ppn=32
+workdir=/lomi_home/gaoyang/st_test/AUS_ERP124866/workdir/qc_control
+
+cd $workdir
+
+source /lomi_home/gaoyang/miniconda/bin/activate argranker
+
+#fqc
+/lomi_home/gaoyang/miniconda/envs/argranker/bin/fastqc ./*fastq -t 20 -o /lomi_home/gaoyang/st_test/AUS_ERP124866/workdir/qc_control
+
+# Single End
+for filename in *.fastq
+do
+base=$(basename $filename .fastq)
+python /lomi_home/gaoyang/miniconda/envs/argranker/share/trimmomatic/trimmomatic SE -threads 6 -phred33 ${base}.fastq ${base}_clean.fq ILLUMINACLIP:/lomi_home/gaoyang/miniconda/envs/argranker/share/trimmomatic/adapters/TruSeq3-SE.fa:2:40:15 LEADING:2 TRAILING:2 SLIDINGWINDOW:4:20 MINLEN:25
+/lomi_home/gaoyang/miniconda/envs/argranker/bin/fastqc ./*fastq -t 4 -o /lomi_home/gaoyang/st_test/AUS_ERP124866/workdir/qc_control
+done
+
+
+
+

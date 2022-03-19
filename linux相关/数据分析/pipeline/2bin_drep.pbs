@@ -1,0 +1,20 @@
+#!/bin/bash
+#PBS -N bin_drep
+#PBS -l nodes=c004:ppn=32
+workdir=/home/wenxiu/pipeline/meta_MAG_workdir/influent_test
+cd $workdir
+
+threads=32
+
+##drep genomes
+
+mkdir allbinning_results
+cp */binning/binning_result/*fa allbinning_results/
+
+module load miniconda3
+source activate drep-2.6.2
+
+dRep dereplicate allbinning_results_derep -g allbinning_results/*.fa -comp 70 -con 5 -p $threads
+
+
+conda deactivate

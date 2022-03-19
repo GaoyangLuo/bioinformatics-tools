@@ -1,0 +1,38 @@
+#!/bin/bash
+#PBS -N assembly_patho
+#PBS -l nodes=c004:ppn=32
+workdir=/lomi_home/gaoyang/microplastic_test/NorthPacificGyre_PRJNA318384/metagenome_illumina/pathfact_test
+cd $workdir
+
+
+threads=32
+
+#assembly
+export PATH=$PATH:/share/software/megahit
+
+for i in *1.fq
+do
+BASE=${i%%_*}
+reads_1=${BASE}_clean_1.fq
+reads_2=${BASE}_clean_2.fq
+megahit --presets meta-sensitive -t $threads -m 0.9 -1 $reads_1 -2 $reads_2 -o ${BASE}_meghit_asm
+done
+
+# assess results
+mkdir Results
+for i in *1.fq
+do
+BASE=${i%%_*}
+mv ${BASE}_meghit_asm/final.contigs.fa Results/${BASE}.contigs.fa
+done
+
+module load miniconda3
+source activate quast
+
+for i in Results/*fa
+do quast -t 64 $i -o ${i/.contigs.fa/}.quast
+done
+
+conda deactivate
+
+rm -rf *asm

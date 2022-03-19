@@ -1,0 +1,65 @@
+#!/bin/bash
+#PBS -N binning_BC-Cote
+#PBS -l nodes=c002:ppn=32
+workdir=/home/wenxiu/pipeline/meta_MAG_workdir/influent_test
+cd $workdir
+
+threads=32
+name='BC-Cote'
+
+##BINNING
+
+mkdir -p ${name}/binning/workdir && cd $_
+ln -s ../../assembly/Results/*contigs.fa .
+ln -s ../../clean_reads/*fastq .
+
+#filtering <2kb contigs
+
+export PATH=$PATH:/share/software/miniconda/miniconda3-latest/envs/seqmagick/bin
+for i in *contigs.fa
+do
+seqmagick convert --min-length 2000 $i ${i/.fa/}.min2k.fa
+done
+
+rm *contigs.fa
+
+##basalt binning
+#prepare contig.list
+echo `(ls *fa)` | sed 's/ /,/g' > contig.list
+
+#prepare reads.list
+echo `(ls *fastq)` | sed 's/ /,/g' | sed 's/2.fastq,/2.fastq;/g' > reads.list
+
+module load miniconda3
+source activate BASALT
+
+a=$(echo `(cat contig.list)`)
+b=$(echo `(cat reads.list)`)
+
+BASALT -al $a -ds $b -t $threads -r 1000 --autobinning more-sensitive --reassembly --max-ctn 10 --min-cpn 50
+
+conda deactivate
+
+#rename bin_label
+mkdir ../binning_result && cd $_
+#mv ../workdir/BestBinset_outlier_refined_filtrated_retrieved_retrieved_OLC_re-assembly/* .
+mv  ../workdir/Final_bestbinset/* .
+
+rm -rf ../workdir
+
+for i in *_*fa
+do
+mv $i ${i/_*/}.fa
+done
+
+for i in *fa
+do
+mv $i ${name}_${i}
+done
+
+#rename bin_contig
+for i in *fa
+do
+python /home/wenxiu/script/rename_bin.py $i tmp1
+mv tmp1 $i
+done

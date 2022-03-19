@@ -1,0 +1,19 @@
+------------------------------------------------------------------------
+arg_ranker evaluates the risk of ARGs in genomes/metagenomes
+Requirement: blast, diamond, kraken, python 3
+Copyright:An-Ni Zhang, MIT; Prof. Tong Zhang, University of Hong Kong
+Contact caozhichongchong@gmail.com
+------------------------------------------------------------------------
+
+['/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995156.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995157.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995158.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995198.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995199.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995200.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995201.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995202.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995203.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995204.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995205.contigs.fa', '/lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run/ERR1995206.contigs.fa'] /lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_run /lomi_home/gaoyang/miniconda/envs/argranker/lib/python3.9/site-packages/arg_ranker
+Please run 
+sh /lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_ranking/script_output//arg_ranker.sh
+------------------------------------------------------------------------
+arg_ranker evaluates the risk of ARGs in genomes/metagenomes
+Requirement: blast, diamond, kraken, python 3
+Copyright:An-Ni Zhang, MIT; Prof. Tong Zhang, University of Hong Kong
+Contact caozhichongchong@gmail.com
+------------------------------------------------------------------------
+
+Finished ranking ARGs
+Please check your results in /lomi_home/gaoyang/microplastic_test/bioplastic_PRJEB15404/metagenome_illumina/arg_ranking/Sample_ranking_results.txt

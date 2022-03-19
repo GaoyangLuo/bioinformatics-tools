@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -N bin_classify
+#PBS -l nodes=c004:ppn=32
+workdir=/home/wenxiu/pipeline/meta_MAG_workdir/influent_test
+cd $workdir
+
+
+##gtdbtk classify
+
+module load miniconda3
+source activate gtdbtk-1.6.0
+
+gtdbtk classify_wf --cpus 8 --genome_dir allbinning_results_derep/dereplicated_genomes  --out_dir allbinning_results_derep_gtdbtk -x fa
+
+conda deactivate

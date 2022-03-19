@@ -1,0 +1,44 @@
+#!/bin/bash
+#PBS -N bin_quant
+#PBS -l nodes=c004:ppn=32
+workdir=/home/wenxiu/pipeline/meta_MAG_workdir/influent_test
+
+
+cd $workdir
+
+threads=32
+
+##MAG abundance
+
+mkdir -p quant_allbins/wordir && cd $_
+cat ../../allbinning_results_derep/dereplicated_genomes/*fa > all_mgs.min2k.fa
+ln -s ../../*/clean_reads/*fastq .
+
+/home/wenxiu/pipeline/bowtie_align_material/bin_abundance.sh all_mgs.min2k.fa
+
+#get sample read counts  
+
+module load miniconda3
+source activate seqkit
+
+for i in *_1.fastq
+do
+seqkit stat $i > ${i/_1.fastq/}.stat
+done
+
+cat *stat | awk -v FS=' ' -v OFS='\t' '{print $1, $4}' | sort | uniq > allsample.stat
+
+
+#calculate bin rpkm
+
+for i in *rpkm
+do
+python /home/wenxiu/pipeline/bowtie_align_material/bin_rpkm_calculation.py $i allsample.stat ${i/.rpkm/}.cal_bin.rpkm
+done
+
+#combine
+python /home/wenxiu/pipeline/bowtie_align_material/quant_combine.py ./ allsample_bin_quant.txt
+
+
+
+

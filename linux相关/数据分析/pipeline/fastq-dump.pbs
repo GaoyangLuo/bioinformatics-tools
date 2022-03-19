@@ -1,0 +1,12 @@
+#!/bin/bash
+#PBS -N fastq-dump_NorthPG
+#PBS -l nodes=c003:ppn=16
+
+workdir=/lomi_home/gaoyang/microplastic_test/NorthPacificGyre_PRJNA318384/metagenome_illumina/0_rawdata
+cd $workdir
+
+threads=16
+
+export PATH=$PATH:/share/software/sratoolkit/sratoolkit-2.9.6/bin
+
+fastq-dump --split-3 *

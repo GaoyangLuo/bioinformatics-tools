@@ -1,0 +1,88 @@
+#!/bin/bash
+#PBS -N QC_assembly_K-Swed
+#PBS -l nodes=c006:ppn=16
+workdir=/lomi_home/gaoyang/meta_MAG_workdir/as_China
+cd $workdir
+
+threads=32
+name='K-Swed'
+
+#vi ${name}.list
+
+##get the binning list
+mkdir -p ${name}/read_QC && cd $_
+cp ../../${name}.list .
+
+##get rawdata
+while read i
+do ln -s /lomi_home/gaoyang/gaoyang_tmp/wastewater/influent/2019_NC_Global_monitoring_urban_sewage/data_extraction_fastq/${i}.*fastq .
+done < ${name}.list
+
+##QC
+#covert format
+
+for i in *fastq
+do
+python /share/pipelines/tools/CONVERT_FastQFastA_to_FastQStd.py -s $i -c N
+done
+
+#paired-end QC
+
+for i in *_1.fastq
+do
+BASE=${i%%_*}
+reads_1=${BASE}_1.fastq
+reads_2=${BASE}_2.fastq
+/lomi_home/gaoyang/meta_MAG_workdir/influent_treat/QC_material/paired-end.sh $reads_1 $reads_2
+done
+
+##assess QC results
+
+mkdir ../clean_reads && cd $_
+mv ../read_QC/*clean*fastq .
+
+export PATH=$PATH:/share/software/miniconda/miniconda3-latest/envs/fastqc-0.11.8/bin
+
+for i in *1.fastq
+do
+BASE=${i%%_*}
+mkdir ${BASE}_post-QC_report
+reads_1=${BASE}_clean_1.fastq
+reads_2=${BASE}_clean_2.fastq
+fastqc -q -t $threads -o ${BASE}_post-QC_report -f fastq $reads_1 $reads_2 
+done
+
+##assembly
+
+mkdir ../assembly && cd $_
+
+export PATH=$PATH:/share/software/megahit
+ln -s ../clean_reads/*fastq .
+
+for i in *1.fastq
+do
+BASE=${i%%_*}
+reads_1=${BASE}_clean_1.fastq
+reads_2=${BASE}_clean_2.fastq
+megahit --presets meta-sensitive -t $threads -m 0.9 -1 $reads_1 -2 $reads_2 -o ${BASE}_meghit_asm
+done
+
+#assess assembly results
+
+mkdir Results
+for i in *1.fastq
+do
+BASE=${i%%_*}
+mv ${BASE}_meghit_asm/final.contigs.fa Results/${BASE}.contigs.fa
+done
+
+module load miniconda3
+source activate quast
+
+for i in Results/*fa
+do quast -t 64 $i -o ${i/.contigs.fa/}.quast
+done
+
+conda deactivate
+
+rm -rf *asm

@@ -1,0 +1,11 @@
+#!/bin/bash
+#PBS -N patho-NPG
+#PBS -l nodes=c004:ppn=32
+workdir=/lomi_home/gaoyang/software/PathoFact
+cd $workdir
+
+threads=32
+
+source /lomi_home/gaoyang/miniconda/bin/activate pathofact
+
+/lomi_home/gaoyang/miniconda/envs/pathofact/bin//snakemake -s Snakefile --configfile config_NPG.yaml --cores 32 --use-conda --reason -p
